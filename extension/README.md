@@ -42,3 +42,4 @@ You can verify it is running by checking `http://localhost:8000/health`.
    - **Metadata Verification** (author, date, HTTPS, publisher domain)
    - **Evidence & Fact-Check Matches**
    - **Responsible AI Disclaimer**
+

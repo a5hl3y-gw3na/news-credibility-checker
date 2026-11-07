@@ -269,3 +269,4 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("disclaimer-text").innerText = res.disclaimer || "";
   }
 });
+
