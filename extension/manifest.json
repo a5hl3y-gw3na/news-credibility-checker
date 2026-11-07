@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "News Credibility Checker",
+  "version": "1.0.0",
+  "description": "AI-powered browser extension to assess the credibility of online news articles.",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "http://localhost:8000/*",
+    "http://127.0.0.1:8000/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
+
