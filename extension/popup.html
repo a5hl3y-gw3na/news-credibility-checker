@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News Credibility Checker</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo-group">
+        <span class="icon">📰</span>
+        <div>
+          <h1 class="title">Credibility Checker</h1>
+          <p class="subtitle">AI & Evidence-Based News Assessment</p>
+        </div>
+      </div>
+      <div id="backend-status" class="status-indicator status-checking" title="Backend Status"></div>
+    </header>
+
+    <!-- Main Action -->
+    <div id="action-section" class="action-section">
+      <button id="analyze-btn" class="btn btn-primary">
+        <span class="btn-text">Analyse This Article</span>
+      </button>
+      <p class="hint">Tip: Highlight a specific claim on the page before clicking to fact-check it.</p>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading-section" class="loading-section hidden">
+      <div class="spinner"></div>
+      <p class="loading-text">Extracting article & running AI analysis...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-section" class="error-section hidden">
+      <div class="error-box">
+        <span class="error-icon">⚠️</span>
+        <div class="error-content">
+          <p id="error-message" class="error-message">Could not connect to backend.</p>
+          <p class="error-help">Ensure your FastAPI server is running at <code>http://localhost:8000</code>.</p>
+        </div>
+      </div>
+      <button id="retry-btn" class="btn btn-secondary">Try Again</button>
+    </div>
+
+    <!-- Results Section -->
+    <div id="results-section" class="results-section hidden">
+      <!-- Assessment Badge Banner -->
+      <div id="assessment-banner" class="assessment-banner">
+        <div class="assessment-header">
+          <span class="assessment-title">Overall Assessment</span>
+          <span id="assessment-badge" class="badge">--</span>
+        </div>
+        <p id="assessment-summary" class="assessment-summary"></p>
+
+        <!-- Warning Score Meter -->
+        <div class="score-container">
+          <div class="score-label">
+            <span>Warning Score</span>
+            <span id="score-value" class="score-number">--</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div id="score-bar" class="progress-bar-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analysis Details Accordion / Sections -->
+      <div class="details-list">
+        <!-- 1. AI ML Model -->
+        <details class="detail-card" open>
+          <summary class="card-summary">
+            <span class="card-title">🤖 Machine Learning Model</span>
+            <span id="model-status-badge" class="pill">--</span>
+          </summary>
+          <div class="card-body">
+            <div id="model-content">
+              <p class="detail-row"><strong>Prediction:</strong> <span id="model-prediction">--</span></p>
+              <p class="detail-row"><strong>Risk Probability:</strong> <span id="model-risk">--</span></p>
+              <div id="model-probabilities" class="probabilities-grid"></div>
+              <p id="model-note" class="note-text"></p>
+            </div>
+          </div>
+        </details>
+
+        <!-- 2. Language Patterns -->
+        <details class="detail-card">
+          <summary class="card-summary">
+            <span class="card-title">✍️ Language Patterns</span>
+            <span id="language-score-badge" class="pill">--</span>
+          </summary>
+          <div class="card-body">
+            <div id="language-indicators" class="indicator-list"></div>
+          </div>
+        </details>
+
+        <!-- 3. Metadata Analysis -->
+        <details class="detail-card">
+          <summary class="card-summary">
+            <span class="card-title">📋 Metadata & Publishing</span>
+            <span id="metadata-score-badge" class="pill">--</span>
+          </summary>
+          <div class="card-body">
+            <div id="metadata-indicators" class="indicator-list"></div>
+          </div>
+        </details>
+
+        <!-- 4. Fact-Checking Evidence -->
+        <details class="detail-card">
+          <summary class="card-summary">
+            <span class="card-title">🔍 Evidence & Fact-Checks</span>
+            <span id="evidence-status-badge" class="pill">--</span>
+          </summary>
+          <div class="card-body">
+            <div id="evidence-content">
+              <p id="evidence-note" class="note-text"></p>
+              <div id="evidence-items" class="evidence-list"></div>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <!-- Responsible AI Disclaimer -->
+      <div class="disclaimer-box">
+        <strong>⚠️ Responsible AI Notice:</strong>
+        <p id="disclaimer-text" class="disclaimer-text"></p>
+      </div>
+
+      <button id="reanalyze-btn" class="btn btn-outline">Analyse Again</button>
+    </div>
+
+    <!-- Footer Settings -->
+    <footer class="footer">
+      <div class="footer-settings">
+        <label for="api-url">API URL:</label>
+        <input type="text" id="api-url" value="http://localhost:8000" />
+      </div>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
+
