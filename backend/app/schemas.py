@@ -48,7 +48,10 @@ class AnalysisResponse(BaseModel):
     combined_score: Optional[float] = None
     model: ModelResult
     metadata: IndicatorResult
+    nlp: IndicatorResult
     language: IndicatorResult
     evidence: EvidenceResult
     limitations: list[str]
     disclaimer: str
+
+    

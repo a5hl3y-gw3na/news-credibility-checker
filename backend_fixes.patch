@@ -1,0 +1,142 @@
+diff --git a/backend/.env.example b/backend/.env.example
+index 81a3d73..e90f624 100644
+--- a/backend/.env.example
++++ b/backend/.env.example
+@@ -1,6 +1,6 @@
+ # Copy to .env (never commit .env). Load with `uvicorn app.main:app --env-file .env`.
+-MODEL_PATH=models/baseline.joblib
++MODEL_PATH=models/model.joblib
+ # Comma-separated class names from the AI lead's dataset that mean "higher risk"
+-RISK_LABELS=fake,unreliable
++RISK_LABELS=1,fake,unreliable
+ # Optional: Google Fact Check Tools API key (evidence retrieval)
+ FACTCHECK_API_KEY=
+diff --git a/backend/app/analysis.py b/backend/app/analysis.py
+index 9ca5f17..c34e567 100644
+--- a/backend/app/analysis.py
++++ b/backend/app/analysis.py
+@@ -77,7 +77,7 @@ async def run(req: ArticleRequest) -> AnalysisResponse:
+                 note="Insufficient article text for evidence retrieval."),limitations=LIMITATIONS,disclaimer=DISCLAIMER)
+     #Run the individual analysis components
+     try:
+-        model = model_service.predict(article_text)
++        model = model_service.predict(article_text, title)
+     except Exception:
+         logger.exception("Machine learning analysis failed.")
+         model = ModelResult(available=False,
+diff --git a/backend/app/config.py b/backend/app/config.py
+index 910bd5c..ed581cc 100644
+--- a/backend/app/config.py
++++ b/backend/app/config.py
+@@ -5,14 +5,14 @@ from pathlib import Path
+ # Base directory: backend/
+ BASE_DIR = Path(__file__).resolve().parent.parent
+ # Machine learning model configuration
+-_model_path = os.getenv("MODEL_PATH","models/baseline.joblib")
++_model_path = os.getenv("MODEL_PATH","models/model.joblib")
+ MODEL_PATH = Path(_model_path)
+ # Resolve relative model paths against the backend directory.
+ if not MODEL_PATH.is_absolute():
+     MODEL_PATH = BASE_DIR / MODEL_PATH
+ # Classification labels considered potential risk indicators.
+ RISK_LABELS = {label.strip().lower()
+-    for label in os.getenv("RISK_LABELS","fake,unreliable").split(",")
++    for label in os.getenv("RISK_LABELS","1,fake,unreliable").split(",")
+     if label.strip()}
+ # Article text processing limits.
+ MIN_TEXT_CHARS = int(os.getenv("MIN_TEXT_CHARS", "300"))
+diff --git a/backend/preprocessing.py b/backend/app/preprocessing.py
+similarity index 100%
+rename from backend/preprocessing.py
+rename to backend/app/preprocessing.py
+diff --git a/backend/app/services/model_service.py b/backend/app/services/model_service.py
+index f8c1b0b..38dea09 100644
+--- a/backend/app/services/model_service.py
++++ b/backend/app/services/model_service.py
+@@ -9,6 +9,7 @@ from pathlib import Path
+ import joblib
+ from app import config
+ from app.schemas import ModelResult
++from app.preprocessing import clean_text
+ 
+ 
+ logger = logging.getLogger(__name__)
+@@ -46,7 +47,7 @@ def is_loaded() -> bool:
+     #Returns whether the trained classifier is available.
+     return _pipeline is not None
+ 
+-def predict(text: str) -> ModelResult:
++def predict(text: str, title: str | None = None) -> ModelResult:
+     #Classifies article text and calculates its risk probability.
+     #Risk probability is determined using the labels defined in config.RISK_LABELS.
+ 
+@@ -59,7 +60,9 @@ def predict(text: str) -> ModelResult:
+ 
+     try:
+         # Generate class probabilities.
+-        probabilities = _pipeline.predict_proba([text])[0]
++        # The model was trained on cleaned "title. text" (see the training notebook).
++        content = f"{clean_text(title)}. {clean_text(text)}".strip()
++        probabilities = _pipeline.predict_proba([content])[0]
+         #Obtain the labels associated with the probabilities.
+         classes = [str(label).lower()
+             for label in _pipeline.classes_]
+diff --git a/backend/requirements.txt b/backend/requirements.txt
+index 889ba06..b134da6 100644
+--- a/backend/requirements.txt
++++ b/backend/requirements.txt
+@@ -2,7 +2,7 @@ fastapi==0.115.0
+ uvicorn[standard]==0.30.6
+ pydantic==2.9.2
+ httpx==0.27.2
+-scikit-learn==1.5.2
+-joblib==1.4.2
++scikit-learn==1.6.1
++joblib==1.6.0
+ python-dateutil==2.9.0
+ pytest==8.3.3
+diff --git a/backend/tests/test_model_integration.py b/backend/tests/test_model_integration.py
+new file mode 100644
+index 0000000..7e41037
+--- /dev/null
++++ b/backend/tests/test_model_integration.py
+@@ -0,0 +1,39 @@
++"""Tests the REAL trained model through the backend's model_service.
++Skipped if models/model.joblib is missing. Guards against the label mismatch that
++previously made the model's risk probability None (classes are 0/1, not 'fake'/'real')."""
++import os, sys
++from pathlib import Path
++import pytest
++
++sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
++from app import config
++from app.services import model_service
++
++REAL = Path(__file__).resolve().parent.parent / "models" / "model.joblib"
++pytestmark = pytest.mark.skipif(not REAL.exists(), reason="models/model.joblib not present")
++
++NEWS = ("The U.S. Senate voted on Tuesday to approve a spending bill, officials said, after weeks of "
++        "negotiations between Republican and Democratic leaders. The bill, which passed 68-32, now goes "
++        "to the House of Representatives, a spokesman told reporters. Lawmakers said they expected a final vote by Friday. ") * 2
++OPINION = ("BREAKING: Obama just DESTROYED the media with an insane move! Watch this video, you won't believe it. "
++           "Hillary and the GOP are lying to America again, and nobody is talking about it. ") * 3
++
++
++@pytest.fixture(autouse=True)
++def load_real_model(monkeypatch):
++    monkeypatch.setattr(config, "MODEL_PATH", REAL)
++    model_service.load_model()
++    yield
++    model_service._pipeline = None
++
++
++def test_risk_labels_match_model_classes():
++    classes = {str(c).lower() for c in model_service._pipeline.classes_}
++    assert classes & config.RISK_LABELS, f"RISK_LABELS {config.RISK_LABELS} match none of {classes}"
++
++
++def test_risk_probability_is_produced_and_ordered():
++    news = model_service.predict(NEWS, "Senate approves spending bill")
++    opinion = model_service.predict(OPINION, "SHOCKING: Obama DESTROYS the media!!!")
++    assert news.risk_probability is not None and opinion.risk_probability is not None
++    assert opinion.risk_probability > news.risk_probability

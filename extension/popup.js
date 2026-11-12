@@ -241,7 +241,27 @@ document.addEventListener("DOMContentLoaded", () => {
       metaList.innerHTML = "<p class='note-text'>No metadata indicators triggered.</p>";
     }
 
-    // 6. Evidence Results
+    // 6. NLP Indicators
+    const nlpBadge = document.getElementById("nlp-score-badge");
+    const nlpList = document.getElementById("nlp-indicators");
+    
+    if (nlpBadge && nlpList) {
+      nlpBadge.innerText = res.nlp ? `Score: ${res.nlp.score}` : "--";
+      nlpList.innerHTML = "";
+
+      if (res.nlp && res.nlp.indicators && res.nlp.indicators.length > 0) {
+        res.nlp.indicators.forEach((item) => {
+          const row = document.createElement("div");
+          row.className = `indicator-item indicator-${item.severity}`;
+          row.innerHTML = `<span>${item.severity === "warning" ? "⚠️" : "ℹ️"}</span><span>${item.message}</span>`;
+          nlpList.appendChild(row);
+        });
+      } else {
+        nlpList.innerHTML = "<p class='note-text'>No linguistic warning signs detected.</p>";
+      }
+    }
+
+    // 7. Evidence Results
     const evidenceBadge = document.getElementById("evidence-status-badge");
     const evidenceNote = document.getElementById("evidence-note");
     const evidenceList = document.getElementById("evidence-items");
@@ -265,8 +285,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
-    // 7. Disclaimer
+    // 8. Disclaimer
     document.getElementById("disclaimer-text").innerText = res.disclaimer || "";
   }
 });
-

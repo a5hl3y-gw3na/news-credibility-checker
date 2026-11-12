@@ -1,18 +1,20 @@
 #Central configuration for the News Credibility Checker.Environment variables can override default settings.
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+load_dotenv()
 
 # Base directory: backend/
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Machine learning model configuration
-_model_path = os.getenv("MODEL_PATH","models/baseline.joblib")
+_model_path = os.getenv("MODEL_PATH","models/model.joblib")
 MODEL_PATH = Path(_model_path)
 # Resolve relative model paths against the backend directory.
 if not MODEL_PATH.is_absolute():
     MODEL_PATH = BASE_DIR / MODEL_PATH
 # Classification labels considered potential risk indicators.
 RISK_LABELS = {label.strip().lower()
-    for label in os.getenv("RISK_LABELS","fake,unreliable").split(",")
+    for label in os.getenv("RISK_LABELS","1,fake,unreliable").split(",")
     if label.strip()}
 # Article text processing limits.
 MIN_TEXT_CHARS = int(os.getenv("MIN_TEXT_CHARS", "300"))
