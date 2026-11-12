@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import analysis
 from app.schemas import AnalysisResponse, ArticleRequest
 from app.services import model_service
+from dotenv import load_dotenv
+load_dotenv()
 
 
 logging.basicConfig(level=logging.INFO)

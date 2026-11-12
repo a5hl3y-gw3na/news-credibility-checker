@@ -9,6 +9,7 @@ from pathlib import Path
 import joblib
 from app import config
 from app.schemas import ModelResult
+from app.preprocessing import clean_text
 
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ def is_loaded() -> bool:
     #Returns whether the trained classifier is available.
     return _pipeline is not None
 
-def predict(text: str) -> ModelResult:
+def predict(text: str, title: str | None = None) -> ModelResult:
     #Classifies article text and calculates its risk probability.
     #Risk probability is determined using the labels defined in config.RISK_LABELS.
 
@@ -59,7 +60,9 @@ def predict(text: str) -> ModelResult:
 
     try:
         # Generate class probabilities.
-        probabilities = _pipeline.predict_proba([text])[0]
+        # The model was trained on cleaned "title. text" (see the training notebook).
+        content = f"{clean_text(title)}. {clean_text(text)}".strip()
+        probabilities = _pipeline.predict_proba([content])[0]
         #Obtain the labels associated with the probabilities.
         classes = [str(label).lower()
             for label in _pipeline.classes_]
